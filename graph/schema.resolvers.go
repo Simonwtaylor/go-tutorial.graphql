@@ -11,11 +11,29 @@ import (
 	"github.com/Simonwtaylor/go-tutorial.graphql/graph/model"
 )
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
+func (r *mutationResolver) PostMessage(ctx context.Context, user string, text string) (*model.Message, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
+func (r *queryResolver) Messages(ctx context.Context) ([]*model.Message, error) {
+	return []*model.Message{
+		{
+			ID:   "1",
+			Text: "aidsjaoisd",
+			User: "asuhdaushd",
+		},
+	}, nil
+}
+
+func (r *queryResolver) Users(ctx context.Context) ([]string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *subscriptionResolver) MessagePost(ctx context.Context, user string) (<-chan *model.Message, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *subscriptionResolver) UserJoined(ctx context.Context, user string) (<-chan string, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -25,5 +43,9 @@ func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResol
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// Subscription returns generated.SubscriptionResolver implementation.
+func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subscriptionResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }
