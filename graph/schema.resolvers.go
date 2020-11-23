@@ -6,13 +6,33 @@ package graph
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/Simonwtaylor/go-tutorial.graphql/graph/generated"
 	"github.com/Simonwtaylor/go-tutorial.graphql/graph/model"
 )
 
+var mutex = &sync.Mutex{}
+
 func (r *mutationResolver) PostMessage(ctx context.Context, user string, text string) (*model.Message, error) {
-	panic(fmt.Errorf("not implemented"))
+	mutex.Lock()
+	for _, ch := range r.userChannels {
+		ch <- user
+	}
+	mutex.Unlock()
+
+	m := model.Message{
+		ID:   "1",
+		Text: text,
+		User: user,
+	}
+
+	mutex.Lock()
+	for _, ch := range r.messageChannels {
+		ch <- &m
+	}
+
+	return &m, nil
 }
 
 func (r *queryResolver) Messages(ctx context.Context) ([]*model.Message, error) {
@@ -30,11 +50,38 @@ func (r *queryResolver) Users(ctx context.Context) ([]string, error) {
 }
 
 func (r *subscriptionResolver) MessagePost(ctx context.Context, user string) (<-chan *model.Message, error) {
-	panic(fmt.Errorf("not implemented"))
+	// Create new channel for request
+	messages := make(chan *model.Message, 1)
+	mutex.Lock()
+	r.messageChannels[user] = messages
+	mutex.Unlock()
+
+	// Delete channel when done
+	go func() {
+		<-ctx.Done()
+		mutex.Lock()
+		delete(r.messageChannels, user)
+		mutex.Unlock()
+	}()
+
+	return messages, nil
 }
 
 func (r *subscriptionResolver) UserJoined(ctx context.Context, user string) (<-chan string, error) {
-	panic(fmt.Errorf("not implemented"))
+	users := make(chan string, 1)
+	mutex.Lock()
+	r.userChannels[user] = users
+	mutex.Unlock()
+
+	go func() {
+		<-ctx.Done()
+		mutex.Lock()
+		delete(r.userChannels, user)
+		mutex.Unlock()
+	}()
+
+	// mutex.Lock()
+	return users, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
